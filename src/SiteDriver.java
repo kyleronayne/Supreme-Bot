@@ -1,8 +1,8 @@
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.machinepublishers.jbrowserdriver.Settings;
 import com.machinepublishers.jbrowserdriver.UserAgent;
+import org.openqa.selenium.Cookie;
 import org.openqa.selenium.TimeoutException;
-
 import java.util.concurrent.TimeUnit;
 
 public class SiteDriver {
@@ -12,11 +12,12 @@ public class SiteDriver {
 
 
     public SiteDriver() {
-        mobileUserAgent = new UserAgent(UserAgent.Family.WEBKIT, "", "iPhone", "CPU iPhone OS 12_1_4 like Mac OS X", "AppleWebKit/605.1.15 " +
-                "(KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1", "Mozilla/5.0" + " (iPhone; CPU iPhone OS 12_1_4 like Mac" +
-                " OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1");
-        jBrowserDriver = new JBrowserDriver(Settings.builder().headless(false).userAgent(mobileUserAgent).cache(true).build());
-        this.getPage("https://www.supremenewyork.com/mobile/");
+        UserAgent chromeUserAgent = new UserAgent(UserAgent.Family.WEBKIT, "", "Windows NT 10.0", "Win64; x64", "AppleWebKit/537.36 (KHTML, " +
+                "like Gecko) Chrome/73.0.3683.103 Safari/537.36", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like " +
+                "Gecko) Chrome/73.0.3683.103 Safari/537.36");
+        jBrowserDriver =
+                new JBrowserDriver(Settings.builder().headless(false).userAgent(chromeUserAgent).javascript(true).cache(true).build());
+        this.getPage("https://www.supremenewyork.com");
         jBrowserDriver.manage().timeouts().pageLoadTimeout(2, TimeUnit.SECONDS);
     }
 
@@ -32,6 +33,18 @@ public class SiteDriver {
                 continue;
             }
         }
+    }
+
+    public void injectCookie(Cookie cookie) {
+        jBrowserDriver.manage().addCookie(cookie);
+    }
+
+    public String getPageHtml() {
+        return jBrowserDriver.getPageSource();
+    }
+
+    public void refreshPage() {
+        getPage(jBrowserDriver.getCurrentUrl());
     }
 
 

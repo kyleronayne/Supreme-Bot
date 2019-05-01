@@ -14,12 +14,12 @@ public class FindProduct {
 
 
     private Profile profile;
-    private HashMap<String, String> styleSizeIds;
+    private HashMap<String, String> productIds;
 
 
     public FindProduct(Profile profile) {
         this.profile = profile;
-        styleSizeIds = new HashMap<>();
+        productIds = new HashMap<>();
     }
 
 
@@ -42,10 +42,10 @@ public class FindProduct {
                 connection.setConnectTimeout(2000);
                 connection.setRequestMethod("GET");
             } catch (SocketTimeoutException timeoutException) {
-                System.out.println("Error: Connection Opening Timed Out");
+                System.out.println("    Error: Connection Opening Timed Out");
                 continue;
             } catch (IOException connectionOpenException) {
-                System.out.println("Error: Could Not Open Connection");
+                System.out.println("    Error: Could Not Open Connection");
                 continue;
             }
 
@@ -76,7 +76,6 @@ public class FindProduct {
                     continue;
                 }
             } catch (IOException readResponseException) {
-                readResponseException.printStackTrace();
                 System.out.println("    Error: Could Not Read Response");
                 continue;
             }
@@ -87,13 +86,13 @@ public class FindProduct {
     }
 
 
-    private String getProductId(JSONObject stockJson) {
+    private boolean getProductId(JSONObject stockJson) {
         JSONArray categoryProducts;
         try {
             categoryProducts = stockJson.getJSONObject("products_and_categories").getJSONArray(profile.getCategory());
         } catch (JSONException categoryNotFoundException) {
             System.out.println("Category Not Found");
-            return null;
+            return false;
         }
 
         if (categoryProducts != null && !(categoryProducts.isEmpty())) {
@@ -101,23 +100,24 @@ public class FindProduct {
                 String productName = categoryProducts.getJSONObject(productIndex).get("name").toString();
                 if (productName.toLowerCase().contains(profile.getKeyword())) {
                     String productId = categoryProducts.getJSONObject(productIndex).get("id").toString();
-                    return productId;
+                    productIds.put("productId", productId);
+                    return true;
                 }
             }
         }
 
         System.out.println("Could Not Find Product");
-        return null;
+        return false;
     }
 
 
-    private HashMap<String, String> getStyleSizeIds(JSONObject productJson) {
+    private boolean getStyleSizeIds(JSONObject productJson) {
         JSONArray productStyles;
         try {
             productStyles = productJson.getJSONArray("styles");
         } catch (JSONException stylesNotFoundException) {
             System.out.println("Styles Not Loaded");
-            return null;
+            return false;
         }
 
         if (productStyles != null && !(productStyles.isEmpty())) {
@@ -130,7 +130,7 @@ public class FindProduct {
                         productSizes = productStyles.getJSONObject(styleIndex).getJSONArray("sizes");
                     } catch (JSONException sizesNotFoundException) {
                         System.out.println("Sizes Not Loaded");
-                        return null;
+                        return false;
                     }
 
                     if (productSizes != null && !(productSizes.isEmpty())) {
@@ -138,10 +138,9 @@ public class FindProduct {
                             String productSize = productSizes.getJSONObject(sizeIndex).get("name").toString();
                             if (productSize.toLowerCase().contains(profile.getSize())) {
                                 String sizeId = productSizes.getJSONObject(sizeIndex).get("id").toString();
-                                styleSizeIds.put("styleId", styleId);
-                                styleSizeIds.put("sizeId", sizeId);
-                                return styleSizeIds;
-
+                                productIds.put("styleId", styleId);
+                                productIds.put("sizeId", sizeId);
+                                return true;
                             }
                         }
                     }
@@ -150,19 +149,18 @@ public class FindProduct {
         }
 
         System.out.println("Could Not Find Style and/or Size IDs");
-        return null;
+        return false;
     }
 
 
     public HashMap<String, String> find() {
         while (true) {
             JSONObject stockJson = getJson("https://www.supremenewyork.com/mobile_stock.json");
-            String productId = getProductId(stockJson);
-            if (productId != null) {
-                String productJsonUrl = String.format("https://www.supremenewyork.com/shop/%s.json", productId);
+            if (getProductId(stockJson)) {
+                String productJsonUrl = String.format("https://www.supremenewyork.com/shop/%s.json", productIds.get("productId"));
                 JSONObject productJson = getJson(productJsonUrl);
-                if (getStyleSizeIds(productJson) != null) {
-                    return styleSizeIds;
+                if (getStyleSizeIds(productJson)) {
+                    return productIds;
                 }
             }
 
